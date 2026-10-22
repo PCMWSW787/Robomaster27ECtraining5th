@@ -10,11 +10,6 @@
 #include "bmi088.hpp"
 #include "stm32f4xx_hal.h"
 
-
-const float R_imu[3][3] = {{-1.0f, 0.0f, 0.0f},
-                         {0.0f, 1.0f, 0.0f},
-                         {0.0f, 0.0f, -1.0f}};
-
 class IMU
 {
 public:
@@ -40,17 +35,21 @@ private:
     imu_data raw_data_, sensor_data_;
     imu_data calibration_bias_;
     imu_data filtered_data_;
-    float k_low_pass_filter_ = 0.0f;
-    float mahony_kp = 0.0f, mahony_ki = 0.0f;
+    float k_low_pass_filter_ = 0.1f;
+    float mahony_kp = 0.2f, mahony_ki = 0.1f;
+    float mahony_integral_[3] = {};
+    float mahony_integral_limit_ = 1000.0f;
 
     const float R_imu_[3][3] = {{-1.0f, 0.0f, 0.0f},
-                         {0.0f, 1.0f, 0.0f},
-                         {0.0f, 0.0f, -1.0f}};
+                         {0.0f, -1.0f, 0.0f},
+                         {0.0f, 0.0f, 1.0f}};
     const float k_acc_ = 1.0f;
 
     Quaternion q_pos_{1.0f, 0.0f, 0.0f, 0.0f};
 
     float pos_pitch_ = 0.0f, pos_yaw_ = 0.0f, pos_roll_ = 0.0f;
 };
+
+float limit(float f, float min, float max);
 
 #endif //IMU_PROJECT_IMU_HPP

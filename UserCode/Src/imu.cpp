@@ -5,7 +5,14 @@
 #include "imu.hpp"
 #include "math.h"
 
-const float PI = 3.141592;
+const float PI = 3.141592f;
+
+float limit(float f, float min, float max)
+{
+    if (f > max) return max;
+    if (f < min) return min;
+    return f;
+}
 
 void IMU::accCalculate()
 {
@@ -30,9 +37,9 @@ void IMU::gyroCalculate()
     raw_gyro_data_y = static_cast<int16_t>(static_cast<uint16_t>(raw_gyro_data[3]) << 8 | static_cast<uint16_t>(raw_gyro_data[2]));
     raw_gyro_data_z = static_cast<int16_t>(static_cast<uint16_t>(raw_gyro_data[5]) << 8 | static_cast<uint16_t>(raw_gyro_data[4]));
 
-    raw_data_.gyro[0] = static_cast<float>(raw_gyro_data_x) / 32768.0f * gyro_range_;
-    raw_data_.gyro[1] = static_cast<float>(raw_gyro_data_y) / 32768.0f * gyro_range_;
-    raw_data_.gyro[2] = static_cast<float>(raw_gyro_data_z) / 32768.0f * gyro_range_;
+    raw_data_.gyro[0] = static_cast<float>(raw_gyro_data_x) / 32768.0f * gyro_range_ / 180.0f * 3.141592f;
+    raw_data_.gyro[1] = static_cast<float>(raw_gyro_data_y) / 32768.0f * gyro_range_ / 180.0f * 3.141592f;
+    raw_data_.gyro[2] = static_cast<float>(raw_gyro_data_z) / 32768.0f * gyro_range_ / 180.0f * 3.141592f;
 }
 
 void IMU::init()
@@ -52,7 +59,7 @@ void IMU::init()
     else if (raw_gyro_range == 0x03) gyro_range_ = 250.0f;
     else if (raw_gyro_range == 0x04) gyro_range_ = 125.0f;
 
-    for (uint8_t i = 0; i < 100; i++)
+    for (uint32_t i = 0; i < 1000; i++)
     {
         gyroCalculate();
         calibration_bias_.gyro[0] = (raw_data_.gyro[0] + calibration_bias_.gyro[0] * i) / (i + 1);
@@ -100,7 +107,8 @@ void IMU::eulerAngleTransform(){
 
 void IMU::lowPassFilter()
 {
-    for (uint8_t i = 0; i < 3; i++){
+    for (uint8_t i = 0; i < 3; i++)
+    {
         filtered_data_.accel[i] = k_low_pass_filter_ * sensor_data_.accel[i] + ( 1.0f - k_low_pass_filter_) * filtered_data_.accel[i];
         filtered_data_.gyro[i] = sensor_data_.gyro[i];
     }
@@ -125,10 +133,15 @@ void IMU::mahonyFilter()
         U_measure[0] * U_predict[1] - U_measure[1] * U_predict[0]
     };
 
+    for (uint8_t i = 0; i < 3; i++){
+        mahony_integral_[i] += mahony_ki * Error[i] * 0.001f;
+        mahony_integral_[i] = limit(mahony_integral_[i], -mahony_integral_limit_, mahony_integral_limit_);
+    }
+
     float omega_corrcted[3] = {
-        filtered_data_.gyro[0] + mahony_ki * Error[0] + mahony_kp * Error[0],
-        filtered_data_.gyro[1] + mahony_ki * Error[1] + mahony_kp * Error[1],
-        filtered_data_.gyro[2] + mahony_ki * Error[2] + mahony_kp * Error[2]
+        filtered_data_.gyro[0] + mahony_kp * Error[0] + mahony_integral_[0],
+        filtered_data_.gyro[1] + mahony_kp * Error[1] + mahony_integral_[1],
+        filtered_data_.gyro[2] + mahony_kp * Error[2] + mahony_integral_[2]
     };
 
     q_pos_ = q_pos_ +

@@ -17,6 +17,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         imu.sensorDataTransform();
         imu.lowPassFilter();
         imu.mahonyFilter();
+        imu.eulerAngleTransform();
     }
 }
 #ifdef __cplusplus
