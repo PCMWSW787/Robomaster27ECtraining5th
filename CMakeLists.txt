@@ -36,7 +36,12 @@ add_executable(${CMAKE_PROJECT_NAME}
         UserCode/Src/bmi088.cpp
         UserCode/Inc/bmi088.hpp
         UserCode/Src/imu.cpp
-        UserCode/Inc/imu.hpp)
+        UserCode/Inc/imu.hpp
+        UserCode/Inc/imu.hpp
+        UserCode/Src/callback.cpp
+        UserCode/Inc/callback.hpp
+        UserCode/Inc/callback.hpp
+)
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
@@ -53,6 +58,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
+    /UserCode/Inc
     # Add user defined include paths
 )
 
