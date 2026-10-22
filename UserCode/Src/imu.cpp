@@ -80,18 +80,61 @@ void IMU::positionUpdate()
         Quaternion{0.0f, sensor_data_.gyro[0], sensor_data_.gyro[1], sensor_data_.gyro[2]} *
         0.001f;
     q_pos_.normalize();
-    
+}
+
+void IMU::eulerAngleTransform(){
+
     const float qw = q_pos_.w_, qx = q_pos_.x_, qy = q_pos_.y_, qz = q_pos_.z_;
     float sinp = 2.0f * (qw * qy - qz * qx);
-    const float kGimbalLock = 0.99999f;
-    if (fabs(sinp) >= kGimbalLock) {
+    if (fabs(sinp) >= 0.9999999f) {
         pos_pitch_ = copysign(PI / 2.0f, sinp);
-        pos_yaw_ = 2.0f * atan2(-copysign(1.0f, sinp) * qx, qw);
+        pos_yaw_ = 2.0f * atan2f(-copysign(1.0f, sinp) * qx, qw);
         pos_roll_ = 0.0f;
     }
     else {
-        pos_pitch_ = asin(sinp);
-        pos_yaw_ = atan2(2.0f * (qw * qz + qx * qy), 1.0f - 2.0f * (qy * qy + qz * qz));
-        pos_roll_ = atan2(2.0f * (qw * qx + qy * qz), 1.0f - 2.0f * (qx * qx + qy * qy));
+        pos_pitch_ = asinf(sinp);
+        pos_yaw_ = atan2f(2.0f * (qw * qz + qx * qy), 1.0f - 2.0f * (qy * qy + qz * qz));
+        pos_roll_ = atan2f(2.0f * (qw * qx + qy * qz), 1.0f - 2.0f * (qx * qx + qy * qy));
     }
+}
+
+void IMU::lowPassFilter()
+{
+    for (uint8_t i = 0; i < 3; i++){
+        filtered_data_.accel[i] = k_low_pass_filter_ * sensor_data_.accel[i] + ( 1.0f - k_low_pass_filter_) * filtered_data_.accel[i];
+        filtered_data_.gyro[i] = sensor_data_.gyro[i];
+    }
+}
+
+void IMU::mahonyFilter()
+{
+    float U_measure[3] = {}, U_predict[3] = {} ;
+    float l = 0;
+    l = sqrt(filtered_data_.accel[0] * filtered_data_.accel[0] +filtered_data_.accel[1] * filtered_data_.accel[1] +filtered_data_.accel[2] * filtered_data_.accel[2]);
+    for (uint8_t i = 0; i < 3; i++){
+        U_measure[i] = filtered_data_.accel[i] / l;
+    }
+    float x = q_pos_.x_, y = q_pos_.y_, z = q_pos_.z_, w = q_pos_.w_;
+    U_predict[0] = 2 * (x * z - w * y);
+    U_predict[1] = 2 * (y * z + w * x);
+    U_predict[2] = 1 - 2 * (x * x + y * y);
+
+    float Error[3] = {
+        U_measure[1] * U_predict[2] - U_measure[2] * U_predict[1],
+        U_measure[2] * U_predict[0] - U_measure[0] * U_predict[2],
+        U_measure[0] * U_predict[1] - U_measure[1] * U_predict[0]
+    };
+
+    float omega_corrcted[3] = {
+        filtered_data_.gyro[0] + mahony_ki * Error[0] + mahony_kp * Error[0],
+        filtered_data_.gyro[1] + mahony_ki * Error[1] + mahony_kp * Error[1],
+        filtered_data_.gyro[2] + mahony_ki * Error[2] + mahony_kp * Error[2]
+    };
+
+    q_pos_ = q_pos_ +
+        (q_pos_ * 0.5f) *
+        Quaternion{0.0f, omega_corrcted[0], omega_corrcted[1], omega_corrcted[2]} *
+        0.001f;
+    q_pos_.normalize();
+
 }

@@ -21,9 +21,11 @@ public:
     void init();
     void accCalculate();
     void gyroCalculate();
-    // void zeroCalibration();
     void sensorDataTransform();
     void positionUpdate();
+    void eulerAngleTransform();
+    void lowPassFilter();
+    void mahonyFilter();
 
 private:
     float acc_range_ = 0.0f;
@@ -37,6 +39,9 @@ private:
 
     imu_data raw_data_, sensor_data_;
     imu_data calibration_bias_;
+    imu_data filtered_data_;
+    float k_low_pass_filter_ = 0.0f;
+    float mahony_kp = 0.0f, mahony_ki = 0.0f;
 
     const float R_imu_[3][3] = {{-1.0f, 0.0f, 0.0f},
                          {0.0f, 1.0f, 0.0f},
