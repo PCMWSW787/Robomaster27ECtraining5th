@@ -4,8 +4,12 @@
 
 #ifndef IMU_PROJECT_IMU_HPP
 #define IMU_PROJECT_IMU_HPP
-#include <cstdint>
-#include <cmath>
+
+#include "quaternion.hpp"
+#include "imu.hpp"
+#include "bmi088.hpp"
+#include "stm32f4xx_hal.h"
+
 
 const float R_imu[3][3] = {{-1.0f, 0.0f, 0.0f},
                          {0.0f, 1.0f, 0.0f},
@@ -19,10 +23,11 @@ public:
     void gyroCalculate();
     // void zeroCalibration();
     void sensorDataTransform();
+    void positionUpdate();
 
 private:
-    float acc_range = 0.0f;
-    float gyro_range = 0.0f;
+    float acc_range_ = 0.0f;
+    float gyro_range_ = 0.0f;
 
     struct imu_data
     {
@@ -37,6 +42,10 @@ private:
                          {0.0f, 1.0f, 0.0f},
                          {0.0f, 0.0f, -1.0f}};
     const float k_acc_ = 1.0f;
+
+    Quaternion q_pos_{1.0f, 0.0f, 0.0f, 0.0f};
+
+    float pos_pitch_ = 0.0f, pos_yaw_ = 0.0f, pos_roll_ = 0.0f;
 };
 
 #endif //IMU_PROJECT_IMU_HPP

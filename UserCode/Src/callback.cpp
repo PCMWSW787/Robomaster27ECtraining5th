@@ -15,6 +15,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         imu.accCalculate();
         imu.gyroCalculate();
         imu.sensorDataTransform();
+        imu.positionUpdate();
     }
 }
 #ifdef __cplusplus

@@ -539,6 +539,11 @@
               <FileType>8</FileType>
               <FilePath>..\UserCode\Src\imu.cpp</FilePath>
             </File>
+            <File>
+              <FileName>quaternion.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\UserCode\Src\quaternion.cpp</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
